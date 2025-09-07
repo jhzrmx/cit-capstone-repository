@@ -1,9 +1,9 @@
 import re
 import csv
-from io import StringIO
 import uuid
 import json
 import numpy as np
+from io import StringIO
 from pathlib import Path
 from typing import List, Optional
 
@@ -33,7 +33,7 @@ class Capstone(Base):
     year = Column(Integer)
     external_link = Column(String, nullable=True)
     pdf_file = Column(String, nullable=True)
-    embedding = Column(Text, nullable=True)  # JSON string instead of binary
+    embedding = Column(Text, nullable=True)
 
 
 Base.metadata.create_all(bind=engine)
@@ -70,7 +70,7 @@ class CapstoneCreate(BaseModel):
 class CapstoneResponse(BaseModel):
     id: int
     title: str
-    abstract: Optional[str] = None
+    abstract: Optional[str]
     authors: str
     year: int
     external_link: Optional[str]
@@ -98,8 +98,8 @@ def encode_text(text: str):
     return model.encode(text, convert_to_tensor=False).astype(np.float32)
 
 def save_embedding(capstone: Capstone, text: str):
-    embedding = encode_text(text).tolist()   # numpy array -> Python list
-    capstone.embedding = json.dumps(embedding)  # list -> JSON string
+    embedding = encode_text(text).tolist()
+    capstone.embedding = json.dumps(embedding)
 
 def load_embedding(json_str: str):
     return np.array(json.loads(json_str), dtype=np.float32)
@@ -179,8 +179,7 @@ async def import_capstones_csv(
 ):
     if not file.filename.endswith(".csv"):
         raise HTTPException(status_code=400, detail="Only CSV files are allowed")
-
-    # Read file contents
+    
     contents = (await file.read()).decode("utf-8")
     reader = csv.DictReader(StringIO(contents))
 
@@ -193,7 +192,6 @@ async def import_capstones_csv(
             skipped.append({"title": title, "reason": "missing required fields"})
             continue
 
-        # Check if title already exists
         exists = db.query(Capstone).filter(Capstone.title == title).first()
         if exists:
             skipped.append({"title": title, "reason": "duplicate"})
@@ -207,8 +205,7 @@ async def import_capstones_csv(
             external_link=row.get("external_link") or None,
             pdf_file=None
         )
-
-        # Compute embedding
+        
         text_for_embedding = f"{capstone.title} {capstone.abstract}"
         save_embedding(capstone, text_for_embedding)
 

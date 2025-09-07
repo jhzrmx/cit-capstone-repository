@@ -4,11 +4,11 @@ const csvfileInput = document.getElementById("csvFile");
 const uploadResultDiv = document.getElementById("upload-result");
 
 function importModal() {
-  new bootstrap.Modal(document.getElementById("importModal")).show();
+    new bootstrap.Modal(document.getElementById("importModal")).show();
 }
 
 document.getElementById("uploadBtn").addEventListener("click", () => {
-  csvfileInput.click();
+    csvfileInput.click();
 });
 
 csvfileInput.addEventListener("change", async () => {
@@ -35,11 +35,12 @@ csvfileInput.addEventListener("change", async () => {
         if (data.skipped.length > 0) {
             html += `<ul class="list-group text-start">`;
             data.skipped.forEach((s) => {
-            html += `<li class="list-group-item">${s.title || "(no title)"} – ${s.reason}</li>`;
+                html += `<li class="list-group-item">${s.title || "(No Title)"} – ${s.reason}</li>`;
             });
             html += `</ul>`;
         }
         uploadResultDiv.innerHTML = html;
+        loadCapstones();
     } catch (err) {
         uploadResultDiv.innerHTML = `<div class="alert alert-danger">❌ Error: ${err.message}</div>`;
     } finally {

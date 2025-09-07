@@ -4,11 +4,15 @@ This also utilize smart searching with Sentence Transformer using model `all-Min
 
 ## How to use?
 1. Clone this repository
-2. Install required depencencies:
+2. Go to the working directory:
+	```
+   cd cit-capstone-repository
+   ```
+3. Install required dependencies:
 	```
    pip install -r requirements.txt
    ```
-3. Run the FastAPI Uvicorn server:
+4. Run the FastAPI Uvicorn server:
    ```
    uvicorn main:app --reload
    ```
