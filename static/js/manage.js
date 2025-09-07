@@ -5,6 +5,7 @@ const uploadResultDiv = document.getElementById("upload-result");
 
 function importModal() {
     new bootstrap.Modal(document.getElementById("importModal")).show();
+    uploadResultDiv.innerHTML = "";
 }
 
 document.getElementById("uploadBtn").addEventListener("click", () => {

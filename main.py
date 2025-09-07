@@ -6,7 +6,6 @@ import numpy as np
 from io import StringIO
 from pathlib import Path
 from typing import List, Optional
-
 from fastapi import FastAPI, UploadFile, File, Form, Query, Depends, HTTPException
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -35,6 +34,12 @@ class Capstone(Base):
     pdf_file = Column(String, nullable=True)
     embedding = Column(Text, nullable=True)
 
+class User(Base):
+    __tablename__ = "users"
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, unique=True, index=True, nullable=False)
+    password_hash = Column(String, nullable=False)
+    role = Column(String, default="Staff")
 
 Base.metadata.create_all(bind=engine)
 
@@ -127,6 +132,20 @@ def delete_pdf(filename: str):
         if path.exists():
             path.unlink()
 
+'''
+from datetime import datetime, timedelta
+from jose import JWTError, jwt
+
+SECRET_KEY = "supersecretkey"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60
+
+def create_access_token(data: dict, expires_delta: timedelta = None):
+    to_encode = data.copy()
+    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=15))
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+'''
 
 # ------------------------------
 # Routes (Frontend pages)
@@ -142,6 +161,18 @@ def manage_page():
 # ------------------------------
 # CRUD API
 # ------------------------------
+'''
+from fastapi.security import OAuth2PasswordRequestForm
+
+@app.post("/login")
+def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.username == form_data.username).first()
+    if not user or not verify_password(form_data.password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    token = create_access_token({"sub": user.username})
+    return {"access_token": token, "token_type": "bearer"}
+'''
 @app.post("/capstones", response_model=CapstoneResponse)
 async def create_capstone(
     title: str = Form(...),
