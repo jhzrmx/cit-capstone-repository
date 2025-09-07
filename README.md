@@ -1,5 +1,6 @@
 # CIT Capstone Repository
-A web-based capstone storage repository for CIT, written in Python with FastAPI
+A web-based capstone storage repository for CIT, written in Python with FastAPI<br>
+This also utilize smart searching with Sentence Transformer using model `all-MiniLM-L6-v2`
 
 ## How to use?
 1. Clone this repository
