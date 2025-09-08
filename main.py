@@ -154,6 +154,10 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
 def home():
     return FileResponse(TEMPLATES_DIR / "index.html")
 
+@app.get("/login", response_class=HTMLResponse)
+def login():
+    return FileResponse(TEMPLATES_DIR / "login.html")
+
 @app.get("/manage", response_class=HTMLResponse)
 def manage_page():
     return FileResponse(TEMPLATES_DIR / "manage.html")

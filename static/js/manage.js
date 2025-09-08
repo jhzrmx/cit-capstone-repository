@@ -165,9 +165,14 @@ document.getElementById("editForm").addEventListener("submit", async (e) => {
 });
 
 async function deleteCapstone(id) {
-    if (!confirm("Are you sure you want to delete this capstone?")) return;
-    await fetch(`/capstones/${id}`, { method: "DELETE" });
-    loadCapstones();
+    new bootstrap.Modal(document.getElementById("deleteModal")).show();
+    // if (!confirm("Are you sure you want to delete this capstone?")) return;
+    async function callback(id) {
+        await fetch(`/capstones/${id}`, { method: "DELETE" });
+        bootstrap.Modal.getInstance(document.getElementById("deleteModal")).hide();
+        loadCapstones();
+    }
+    document.getElementById("confirm-delete").addEventListener("click", callback.bind(null, id));
 }
 
 loadCapstones();
