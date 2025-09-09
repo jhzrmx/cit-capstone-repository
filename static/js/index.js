@@ -26,7 +26,7 @@ async function loadSearch(page=1) {
 	const pagination = document.getElementById("pagination");
 	pagination.innerHTML = "";
 	
-	const res = await fetch(`/search?page=${page}&per_page=5`, {
+	const res = await fetch(`/api/search?page=${page}&per_page=5`, {
 		method: "POST",
 		headers: {"Content-Type": "application/json"},
 		body: JSON.stringify({ text: searchQuery })
@@ -42,7 +42,7 @@ async function loadSearch(page=1) {
 		const div = document.createElement("div");
 		div.classList.add("card", "mb-2", "p-2");
 		div.innerHTML = `
-			<h5>${r.title}</h5>
+			<h5><a href="/capstone?id=${r.id}">${r.title}</a></h5>
 			<p>${truncateText(r.abstract)}</p>
 			<small>Similarity: ${(r.similarity*100).toFixed(0)}%</small>
 		`;

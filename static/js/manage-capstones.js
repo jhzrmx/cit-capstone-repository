@@ -18,7 +18,7 @@ csvfileInput.addEventListener("change", async () => {
     formData.append("file", csvfileInput.files[0]);
     uploadResultDiv.innerHTML = `<div class="text-info">⏳ Uploading...</div>`;
     try {
-        const res = await fetch("/capstones/import-csv", {
+        const res = await fetch("/api/capstones/import-csv", {
             method: "POST",
             body: formData,
         });
@@ -65,7 +65,7 @@ document.getElementById("addCapstone").addEventListener("submit", async (e) => {
     const btn = e.target.querySelector("button[type=submit]");
     btn.disabled = true;
     btn.textContent = "Adding...";
-    const res = await fetch("/capstones", {
+    const res = await fetch("/api/capstones", {
         method: "POST",
         body: formData
     });
@@ -84,7 +84,7 @@ async function loadCapstones(page=1,currentSearch="") {
     const pagination = document.getElementById("pagination");
     pagination.innerHTML = "";
     
-    const res = await fetch(`/capstones?page=${page}&per_page=10&search=${encodeURIComponent(currentSearch)}`);
+    const res = await fetch(`/api/capstones?page=${page}&per_page=10&search=${encodeURIComponent(currentSearch)}`);
     const data = await res.json();
     
     tableBody.innerHTML = "";
@@ -130,7 +130,7 @@ function doSearch() {
 }
 
 async function openEdit(id) {
-    const res = await fetch(`/capstones/${id}`);
+    const res = await fetch(`/api/capstones/${id}`);
     const c = await res.json();
     document.getElementById("editId").value = c.id;
     document.getElementById("editTitle").value = c.title;
@@ -141,7 +141,7 @@ async function openEdit(id) {
     new bootstrap.Modal(document.getElementById("editModal")).show();
 }
 
-document.getElementById("editForm").addEventListener("submit", async (e) => {
+document.getElementById("editCapstone").addEventListener("submit", async (e) => {
     e.preventDefault();
     const id = document.getElementById("editId").value;
     const editForm = document.getElementById("editForm");
@@ -150,7 +150,7 @@ document.getElementById("editForm").addEventListener("submit", async (e) => {
     btn.disabled = true;
     btn.textContent = "Saving...";
     
-    const res = await fetch(`/capstones/${id}`, {
+    const res = await fetch(`/api/capstones/${id}`, {
         method: "PUT",
         body: formData
     });
@@ -164,15 +164,27 @@ document.getElementById("editForm").addEventListener("submit", async (e) => {
     btn.textContent = "Save Changes";
 });
 
+document.getElementById("deleteCapstone").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const id = document.getElementById("deleteId").value;
+    const btn = e.target.querySelector("button[type=submit]");
+    btn.disabled = true;
+    btn.textContent = "Deleting...";
+    const res =await fetch(`/api/capstones/${id}`, { method: "DELETE" });
+    if (res.ok) {
+        loadCapstones();
+        bootstrap.Modal.getInstance(document.getElementById("deleteModal")).hide();
+    } else {
+        alert("Failed to delete capstone!");
+    }
+    btn.disabled = false;
+    btn.textContent = "Delete";
+});
+
 async function deleteCapstone(id) {
     new bootstrap.Modal(document.getElementById("deleteModal")).show();
     // if (!confirm("Are you sure you want to delete this capstone?")) return;
-    async function callback(id) {
-        await fetch(`/capstones/${id}`, { method: "DELETE" });
-        bootstrap.Modal.getInstance(document.getElementById("deleteModal")).hide();
-        loadCapstones();
-    }
-    document.getElementById("confirm-delete").addEventListener("click", callback.bind(null, id));
+    document.getElementById("deleteId").value = id;
 }
 
 loadCapstones();

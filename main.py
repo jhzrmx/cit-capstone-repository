@@ -154,13 +154,17 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
 def home():
     return FileResponse(TEMPLATES_DIR / "index.html")
 
+@app.get("/capstone", response_class=HTMLResponse)
+def manage_page():
+    return FileResponse(TEMPLATES_DIR / "capstone-overview.html")
+    
 @app.get("/login", response_class=HTMLResponse)
 def login():
     return FileResponse(TEMPLATES_DIR / "login.html")
 
-@app.get("/manage", response_class=HTMLResponse)
+@app.get("/manage-capstones", response_class=HTMLResponse)
 def manage_page():
-    return FileResponse(TEMPLATES_DIR / "manage.html")
+    return FileResponse(TEMPLATES_DIR / "manage-capstones.html")
 
 # ------------------------------
 # CRUD API
@@ -168,7 +172,7 @@ def manage_page():
 '''
 from fastapi.security import OAuth2PasswordRequestForm
 
-@app.post("/login")
+@app.post("/api/login")
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == form_data.username).first()
     if not user or not verify_password(form_data.password, user.password_hash):
@@ -177,7 +181,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     token = create_access_token({"sub": user.username})
     return {"access_token": token, "token_type": "bearer"}
 '''
-@app.post("/capstones", response_model=CapstoneResponse)
+@app.post("/api/capstones", response_model=CapstoneResponse)
 async def create_capstone(
     title: str = Form(...),
     abstract: str = Form(None),
@@ -207,7 +211,7 @@ async def create_capstone(
     return capstone
 
 
-@app.post("/capstones/import-csv")
+@app.post("/api/capstones/import-csv")
 async def import_capstones_csv(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
@@ -256,7 +260,7 @@ async def import_capstones_csv(
     }
 
 
-@app.get("/capstones")
+@app.get("/api/capstones")
 def list_capstones(
     db: Session = Depends(get_db),
     page: int = Query(default=1, ge=1),
@@ -285,7 +289,7 @@ def list_capstones(
     }
 
 
-@app.get("/capstones/{capstone_id}", response_model=CapstoneResponse)
+@app.get("/api/capstones/{capstone_id}", response_model=CapstoneResponse)
 def read_capstone(capstone_id: int, db: Session = Depends(get_db)):
     capstone = db.query(Capstone).filter(Capstone.id == capstone_id).first()
     if not capstone:
@@ -293,7 +297,7 @@ def read_capstone(capstone_id: int, db: Session = Depends(get_db)):
     return capstone
 
 
-@app.put("/capstones/{capstone_id}", response_model=CapstoneResponse)
+@app.put("/api/capstones/{capstone_id}", response_model=CapstoneResponse)
 async def update_capstone(
     capstone_id: int,
     title: str = Form(...),
@@ -326,7 +330,7 @@ async def update_capstone(
     return capstone
 
 
-@app.delete("/capstones/{capstone_id}")
+@app.delete("/api/capstones/{capstone_id}")
 def delete_capstone(capstone_id: int, db: Session = Depends(get_db)):
     capstone = db.query(Capstone).filter(Capstone.id == capstone_id).first()
     if not capstone:
@@ -343,7 +347,7 @@ def delete_capstone(capstone_id: int, db: Session = Depends(get_db)):
 # ------------------------------
 # AI Search Endpoint
 # ------------------------------
-@app.post("/search")
+@app.post("/api/search")
 def search_capstones(
     query: SearchQuery,
     db: Session = Depends(get_db),
