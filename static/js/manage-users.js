@@ -86,7 +86,7 @@ async function loadUsers(page=1,currentSearch="") {
     userTableBody.innerHTML = "";
     
     if (data.results.length === 0) {
-        userTableBody.innerHTML = `<td colspan="4">No results found<td>`;
+        userTableBody.innerHTML = `<td colspan="2">No results found<td>`;
         return;
     }
     data.results.forEach(u => {
