@@ -20,6 +20,7 @@ csvfileInput.addEventListener("change", async () => {
     try {
         const res = await fetch("/api/capstones/import-csv", {
             method: "POST",
+            credentials: "include",
             body: formData,
         });
         if (!res.ok) {
@@ -67,6 +68,7 @@ document.getElementById("addCapstone").addEventListener("submit", async (e) => {
     btn.textContent = "Adding...";
     const res = await fetch("/api/capstones", {
         method: "POST",
+        credentials: "include",
         body: formData
     });
     if (res.ok) {
@@ -144,7 +146,7 @@ async function openEdit(id) {
 document.getElementById("editCapstone").addEventListener("submit", async (e) => {
     e.preventDefault();
     const id = document.getElementById("editId").value;
-    const editForm = document.getElementById("editForm");
+    const editForm = document.getElementById("editCapstone");
     const formData = new FormData(editForm);
     const btn = e.target.querySelector("button[type=submit]");
     btn.disabled = true;
@@ -152,6 +154,7 @@ document.getElementById("editCapstone").addEventListener("submit", async (e) => 
     
     const res = await fetch(`/api/capstones/${id}`, {
         method: "PUT",
+        credentials: "include",
         body: formData
     });
     if (res.ok) {
@@ -170,7 +173,7 @@ document.getElementById("deleteCapstone").addEventListener("submit", async (e) =
     const btn = e.target.querySelector("button[type=submit]");
     btn.disabled = true;
     btn.textContent = "Deleting...";
-    const res =await fetch(`/api/capstones/${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/capstones/${id}`, { method: "DELETE", credentials: "include" });
     if (res.ok) {
         loadCapstones();
         bootstrap.Modal.getInstance(document.getElementById("deleteModal")).hide();

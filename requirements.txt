@@ -7,3 +7,4 @@ torch
 numpy
 python-multipart
 python-jose[cryptography]
+passlib[bcrypt]

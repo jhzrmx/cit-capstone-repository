@@ -6,9 +6,14 @@ import numpy as np
 from io import StringIO
 from pathlib import Path
 from typing import List, Optional
-from fastapi import FastAPI, UploadFile, File, Form, Query, Depends, HTTPException
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi import FastAPI, UploadFile, File, Form, Query, Depends, HTTPException, Cookie, Request, Response
+from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.middleware.cors import CORSMiddleware
+from datetime import datetime, timedelta
+from jose import JWTError, jwt
+from passlib.context import CryptContext
 from pydantic import BaseModel
 from sqlalchemy import create_engine, Column, Integer, String, Text
 from sqlalchemy.ext.declarative import declarative_base
@@ -38,7 +43,7 @@ class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True, nullable=False)
-    password_hash = Column(String, nullable=False)
+    password = Column(String, nullable=False)
     role = Column(String, default="Staff")
 
 Base.metadata.create_all(bind=engine)
@@ -56,6 +61,13 @@ TEMPLATES_DIR = BASE_DIR / "templates"
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],  # Frontend origin
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # ------------------------------
 # AI Model for smart search
@@ -81,13 +93,27 @@ class CapstoneResponse(BaseModel):
     external_link: Optional[str]
     pdf_file: Optional[str]
 
+class UserCreate(BaseModel):
+    username: str
+    password: str
+    role: str = "Staff"
+
+class UserUpdate(BaseModel):
+    username: Optional[str]
+    password: Optional[str]
+    role: Optional[str]
+
+class UserResponse(BaseModel):
+    id: int
+    username: str
+    role: str
+    
     class Config:
         from_attributes = True
 
 
 class SearchQuery(BaseModel):
     text: str
-
 
 # ------------------------------
 # Dependency
@@ -132,20 +158,65 @@ def delete_pdf(filename: str):
         if path.exists():
             path.unlink()
 
-'''
-from datetime import datetime, timedelta
-from jose import JWTError, jwt
-
-SECRET_KEY = "supersecretkey"
+# ------------------------------
+# Auth Utils
+# ------------------------------
+SECRET_KEY = "supersecretkey123"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
-def create_access_token(data: dict, expires_delta: timedelta = None):
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def verify_password(plain_password, hashed_password):
+    return pwd_context.verify(plain_password, hashed_password)
+
+def get_password_hash(password):
+    return pwd_context.hash(password)
+
+def get_user_by_username(db: Session, username: str):
+    return db.query(User).filter(User.username == username).first()
+
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
     expire = datetime.utcnow() + (expires_delta or timedelta(minutes=15))
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-'''
+
+def get_current_user(request: Request):
+    token = request.cookies.get("access_token")
+    if not token:
+        return None
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload
+    except JWTError:
+        return None
+
+def require_role(required_roles: List[str]):
+    def role_checker(claims=Depends(get_current_user)):
+        if not claims:
+            raise HTTPException(status_code=401, detail="Not authenticated")
+        if claims.get("role") not in required_roles:
+            raise HTTPException(status_code=403, detail="Not enough permissions")
+        return claims
+    return role_checker
+
+def authenticate_user(db: Session, username: str, password: str):
+    user = get_user_by_username(db, username)
+    if not user:
+        return None
+    if not verify_password(password, user.password):
+        return None
+    return user
+
+def require_user(request: Request):
+    user = get_current_user(request)
+    if not user:
+        raise HTTPException(
+            status_code=303,
+            detail="Redirecting to login",
+            headers={"Location": "/login"}
+        )
 
 # ------------------------------
 # Routes (Frontend pages)
@@ -155,32 +226,163 @@ def home():
     return FileResponse(TEMPLATES_DIR / "index.html")
 
 @app.get("/capstone", response_class=HTMLResponse)
-def manage_page():
+def capstone_overview():
     return FileResponse(TEMPLATES_DIR / "capstone-overview.html")
     
 @app.get("/login", response_class=HTMLResponse)
 def login():
     return FileResponse(TEMPLATES_DIR / "login.html")
 
+@app.get("/logout")
+def logout():
+    response = RedirectResponse(url="/", status_code=303)
+    response.delete_cookie("access_token", path="/")
+    return response
+
 @app.get("/manage-capstones", response_class=HTMLResponse)
-def manage_page():
-    return FileResponse(TEMPLATES_DIR / "manage-capstones.html")
+def manage_page(claims=Depends(get_current_user)):
+    if not claims:
+        return RedirectResponse(url="/login", status_code=303)
+    response = FileResponse(TEMPLATES_DIR / "manage-capstones.html")
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+@app.get("/manage-users", response_class=HTMLResponse)
+def manage_users_page(claims=Depends(require_role(["Admin"]))):
+    response = FileResponse(TEMPLATES_DIR / "manage-users.html")
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
 
 # ------------------------------
 # CRUD API
 # ------------------------------
-'''
-from fastapi.security import OAuth2PasswordRequestForm
-
 @app.post("/api/login")
-def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.username == form_data.username).first()
-    if not user or not verify_password(form_data.password, user.password_hash):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+def login(
+    response: Response,
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db)
+):
+    user = authenticate_user(db, form_data.username, form_data.password)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid username or password")
 
-    token = create_access_token({"sub": user.username})
-    return {"access_token": token, "token_type": "bearer"}
-'''
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user.username, "role": user.role},
+        expires_delta=access_token_expires
+    )
+
+    response = JSONResponse(content={"message": "Login successful"})
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        secure=False,  # set True in production with HTTPS
+        samesite="Lax",
+        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+    )
+    return response
+
+
+@app.post("/api/logout")
+def logout(response: Response):
+    response = JSONResponse(content={"message": "Logged out successfully"})
+    response.delete_cookie("access_token")
+    return response
+
+
+@app.post("/api/users", response_model=UserResponse)
+def create_user(
+    username: str = Form(...),
+    password: str = Form(...),
+    role: str = Form("Staff"),
+    db: Session = Depends(get_db),
+    claims = Depends(require_role(["Admin"]))
+):
+    if db.query(User).filter(User.username == username).first():
+        raise HTTPException(status_code=400, detail="Username already exists")
+
+    hashed_pw = get_password_hash(password)
+    db_user = User(username=username, password=hashed_pw, role=role)
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+
+@app.get("/api/users")
+def list_users(
+    db: Session = Depends(get_db),
+    page: int = Query(default=1, ge=1),
+    per_page: int = Query(default=10, ge=1, le=50),
+    search: Optional[str] = Query(default=None),
+    claims = Depends(require_role(["Admin"]))
+):
+    query = db.query(User)
+    if search:
+        keyword = f"%{search}%"
+        query = query.filter(User.username.ilike(keyword) | User.role.ilike(keyword))
+    total = query.count()
+    users = query.offset((page - 1) * per_page).limit(per_page).all()
+    results = [{"id": u.id, "username": u.username, "role": u.role} for u in users]
+    return {"total": total, "page": page, "per_page": per_page, "results": results}
+
+
+@app.get("/api/users/current")
+def read_current_user(claims=Depends(get_current_user)):
+    if not claims:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    return {"username": claims["sub"], "role": claims["role"]}
+
+
+@app.get("/api/users/{user_id}", response_model=UserResponse)
+def get_user(user_id: int, db: Session = Depends(get_db), claims = Depends(require_role(["Admin"]))):
+    db_user = db.query(User).filter(User.id == user_id).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return db_user
+
+
+@app.put("/api/users/{user_id}", response_model=UserResponse)
+def update_user(
+    user_id: int,
+    username: Optional[str] = Form(None),
+    password: Optional[str] = Form(None),
+    role: Optional[str] = Form(None),
+    db: Session = Depends(get_db),
+    claims = Depends(require_role(["Admin"]))
+):
+    db_user = db.query(User).filter(User.id == user_id).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if username:
+        if username != db_user.username and db.query(User).filter(User.username == username).first():
+            raise HTTPException(status_code=400, detail="Username already exists")
+        db_user.username = username
+
+    if password:
+        db_user.password = get_password_hash(password)
+
+    if role:
+        db_user.role = role
+
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+
+@app.delete("/api/users/{user_id}")
+def delete_user(user_id: int, db: Session = Depends(get_db), claims = Depends(require_role(["Admin"]))):
+    db_user = db.query(User).filter(User.id == user_id).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    db.delete(db_user)
+    db.commit()
+    return {"message": f"User {db_user.username} deleted successfully"}
+
+
 @app.post("/api/capstones", response_model=CapstoneResponse)
 async def create_capstone(
     title: str = Form(...),
@@ -190,6 +392,7 @@ async def create_capstone(
     external_link: str = Form(None),
     pdf: UploadFile | None = None,
     db: Session = Depends(get_db),
+    claims=Depends(require_role(["Admin", "Staff"]))
 ):
     pdf_filename = None
     if pdf and pdf.filename:
@@ -215,6 +418,7 @@ async def create_capstone(
 async def import_capstones_csv(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
+    claims=Depends(require_role(["Admin", "Staff"]))
 ):
     if not file.filename.endswith(".csv"):
         raise HTTPException(status_code=400, detail="Only CSV files are allowed")
@@ -266,6 +470,7 @@ def list_capstones(
     page: int = Query(default=1, ge=1),
     per_page: int = Query(default=10, ge=1, le=50),
     search: str = Query(default=None),
+    claims=Depends(require_role(["Admin", "Staff"]))
 ):
     query = db.query(Capstone)
 
@@ -307,6 +512,7 @@ async def update_capstone(
     external_link: str | None = Form(None),
     pdf: UploadFile = File(None),
     db: Session = Depends(get_db),
+    claims=Depends(require_role(["Admin", "Staff"]))
 ):
     capstone = db.query(Capstone).filter(Capstone.id == capstone_id).first()
     if not capstone:
@@ -331,7 +537,7 @@ async def update_capstone(
 
 
 @app.delete("/api/capstones/{capstone_id}")
-def delete_capstone(capstone_id: int, db: Session = Depends(get_db)):
+def delete_capstone(capstone_id: int, db: Session = Depends(get_db), claims=Depends(require_role(["Admin", "Staff"]))):
     capstone = db.query(Capstone).filter(Capstone.id == capstone_id).first()
     if not capstone:
         raise HTTPException(status_code=404, detail="Capstone not found")
@@ -391,3 +597,36 @@ def search_capstones(
 
     return {"results": paginated, "total": total, "page": page, "per_page": per_page}
 
+
+# ------------------------------
+# Seed default users (Admin & Staff)
+# ------------------------------
+def seed_default_users():
+    db = SessionLocal()
+    try:
+        from passlib.context import CryptContext
+        pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+        def get_password_hash(password: str):
+            return pwd_context.hash(password)
+
+        if not db.query(User).filter(User.username == "admin").first():
+            admin_user = User(
+                username="admin",
+                password=get_password_hash("admin123"),
+                role="Admin",
+            )
+            db.add(admin_user)
+
+        if not db.query(User).filter(User.username == "staff").first():
+            staff_user = User(
+                username="staff",
+                password=get_password_hash("staff123"),
+                role="Staff",
+            )
+            db.add(staff_user)
+
+        db.commit()
+    finally:
+        db.close()
+
+seed_default_users()

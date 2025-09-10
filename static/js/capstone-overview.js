@@ -22,6 +22,8 @@ async function loadCapstoneById(id) {
     
     content.innerHTML = `
         <h1 class="mt-5">${data.title}</h1>
+        <p class="mt-5">Author(s): ${data.authors}</p>
+        <p>Year: ${data.year}</p>
         <p class="mt-5">${data.abstract}</p>
         ${data.pdf_file ? `<a href="/uploads/${data.pdf_file}" target="_blank">View PDF</a><br/>` : ""}
         ${data.external_link ? `<a href="${data.external_link}" target="_blank">Link</a>` : ""}
@@ -29,3 +31,14 @@ async function loadCapstoneById(id) {
 }
 
 loadCapstoneById(capstoneId);
+
+async function getUser() {
+    const res = await fetch(`/api/users/current`, {
+        credentials: "include",
+    });
+    if (!res.ok) {
+        return null;
+    }
+    const data = await res.json();
+    return data;
+}
