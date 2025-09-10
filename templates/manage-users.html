@@ -36,9 +36,9 @@
         <button onclick="addUserModal()" class="btn btn-success" title="Add User">
           <img src="/static/icons/plus.svg">
         </button>
-        <button onclick="importUserModal()" class="btn btn-primary" title="Import CSV">
+        <!-- button onclick="importUserModal()" class="btn btn-primary" title="Import CSV">
           <img src="/static/icons/upload.svg">
-        </button>
+        </button -->
       </div>
       <input type="search" id="searchUserBox" class="form-control w-50 w-md-25 w-lg-10 mb-2" placeholder="⌕ Search" onkeyup="debounce(doUserSearch)">
     </div>
@@ -70,9 +70,8 @@
               <input class="form-control mb-2" name="password" type="password" placeholder="Password" required>
               <select class="form-control mb-2" name="role" required>
                 <option value="admin" disabled hidden selected>-Select a role-</option>
-                <option value="admin">Admin</option>
-                <option value="faculty">Faculty</option>
-                <option value="student">Student</option>
+                <option value="Admin">Admin</option>
+                <option value="Staff">Staff</option>
               </select>
               <button type="submit" class="btn btn-success">Add User</button>
             </form>
