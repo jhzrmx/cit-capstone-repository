@@ -1,14 +1,11 @@
-let debounceTimer;
-
 document.getElementById("searchForm").addEventListener("submit", async (e) => {
 	e.preventDefault();
 	loadSearch();    
 });
 
-function debounce(callback, delay=500) {
-	clearTimeout(debounceTimer);
-	debounceTimer = setTimeout(callback, delay);
-}
+setTimeout(()=>{
+    document.getElementById("nav-smart-search").classList.add("active");
+}, 250);
 
 function truncateText(text, maxWords=30) {
 	const words = text.split(" ");

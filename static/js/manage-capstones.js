@@ -1,7 +1,10 @@
-let debounceTimer;
 const tableBody = document.getElementById("capstoneTable");
 const csvfileInput = document.getElementById("csvFile");
 const uploadResultDiv = document.getElementById("upload-result");
+
+setTimeout(()=>{
+    document.getElementById("nav-manage-capstones").classList.add("active");
+}, 250);
 
 function importModal() {
     new bootstrap.Modal(document.getElementById("importModal")).show();
@@ -49,11 +52,6 @@ csvfileInput.addEventListener("change", async () => {
         csvfileInput.value = ""; 
     }
 });
-
-function debounce(callback, delay=500) {
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(callback, delay);
-}
 
 function addCapModal() {
     new bootstrap.Modal(document.getElementById("addModal")).show();

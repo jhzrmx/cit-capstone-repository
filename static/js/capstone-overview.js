@@ -2,6 +2,10 @@ const urlParams = new URLSearchParams(window.location.search);
 const capstoneId = urlParams.get("id");
 const content = document.getElementById("content");
 
+setTimeout(()=>{
+    document.getElementById("nav-smart-search").classList.add("active");
+}, 250);
+
 if (capstoneId == null) {
     window.location.href = "/";
 }
@@ -31,14 +35,3 @@ async function loadCapstoneById(id) {
 }
 
 loadCapstoneById(capstoneId);
-
-async function getUser() {
-    const res = await fetch(`/api/users/current`, {
-        credentials: "include",
-    });
-    if (!res.ok) {
-        return null;
-    }
-    const data = await res.json();
-    return data;
-}

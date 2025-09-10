@@ -1,7 +1,10 @@
-let debounceTimer;
 const userTableBody = document.getElementById("userTable");
 const userCsvInput = document.getElementById("csvUserFile");
 const uploadUserResultDiv = document.getElementById("upload-user-result");
+
+setTimeout(()=>{
+    document.getElementById("nav-manage-users").classList.add("active");
+}, 250);
 
 function importUserModal() {
     new bootstrap.Modal(document.getElementById("importUserModal")).show();
@@ -45,11 +48,6 @@ userCsvInput.addEventListener("change", async () => {
         userCsvInput.value = "";
     }
 });
-
-function debounce(callback, delay=500) {
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(callback, delay);
-}
 
 function addUserModal() {
     new bootstrap.Modal(document.getElementById("addUserModal")).show();
@@ -102,6 +100,9 @@ async function loadUsers(page=1,currentSearch="") {
             </button>
             <button class="btn btn-danger btn-sm mb-1" onclick="deleteUser(${u.id})" title="Delete User">
                 <img src="/static/icons/trash-can.svg">
+            </button>
+            <button class="btn btn-secondary btn-sm mb-1" onclick="changePassword(${u.id})" title="Change Password">
+                <img src="/static/icons/key.svg">
             </button>
             </td>
         `;
@@ -175,6 +176,30 @@ document.getElementById("deleteUserForm").addEventListener("submit", async (e) =
 async function deleteUser(id) {
     new bootstrap.Modal(document.getElementById("deleteUserModal")).show();
     document.getElementById("deleteUserId").value = id;
+}
+
+document.getElementById("changePasswordForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const id = document.getElementById("deleteUserId").value;
+    const btn = e.target.querySelector("button[type=submit]");
+    btn.disabled = true;
+    btn.textContent = "Deleting...";
+    /*
+    const res = await fetch(`/api/users/changepassword/${id}`, { method: "PUT", credentials: "include" });
+    if (res.ok) {
+        loadUsers();
+        bootstrap.Modal.getInstance(document.getElementById("changePasswordModal")).hide();
+    } else {
+        alert("Failed to change password!");
+    }
+    */
+    btn.disabled = false;
+    btn.textContent = "Delete";
+});
+
+async function changePassword(id) {
+    new bootstrap.Modal(document.getElementById("changePasswordModal")).show();
+    document.getElementById("changePasswordId").value = id;
 }
 
 loadUsers();

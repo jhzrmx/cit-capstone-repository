@@ -201,6 +201,13 @@ def require_role(required_roles: List[str]):
         return claims
     return role_checker
 
+def require_role_frontend(required_roles: List[str]):
+    def role_checker(claims=Depends(get_current_user)):
+        if not claims or claims.get("role") not in required_roles:
+            return RedirectResponse(url="/login", status_code=303)
+        return claims
+    return role_checker
+
 def authenticate_user(db: Session, username: str, password: str):
     user = get_user_by_username(db, username)
     if not user:
@@ -230,7 +237,9 @@ def capstone_overview():
     return FileResponse(TEMPLATES_DIR / "capstone-overview.html")
     
 @app.get("/login", response_class=HTMLResponse)
-def login():
+def login(claims=Depends(get_current_user)):
+    if claims:
+        return RedirectResponse(url="/", status_code=303)
     return FileResponse(TEMPLATES_DIR / "login.html")
 
 @app.get("/logout")
@@ -240,15 +249,17 @@ def logout():
     return response
 
 @app.get("/manage-capstones", response_class=HTMLResponse)
-def manage_page(claims=Depends(get_current_user)):
-    if not claims:
-        return RedirectResponse(url="/login", status_code=303)
+def manage_capstones(claims=Depends(require_role_frontend(["Admin", "Staff"]))):
+    if isinstance(claims, RedirectResponse):
+        return claims
     response = FileResponse(TEMPLATES_DIR / "manage-capstones.html")
     response.headers["Cache-Control"] = "no-store"
     return response
 
 @app.get("/manage-users", response_class=HTMLResponse)
-def manage_users_page(claims=Depends(require_role(["Admin"]))):
+def manage_users(claims=Depends(require_role_frontend(["Admin"]))):
+    if isinstance(claims, RedirectResponse):
+        return claims
     response = FileResponse(TEMPLATES_DIR / "manage-users.html")
     response.headers["Cache-Control"] = "no-store"
     return response
@@ -332,7 +343,7 @@ def list_users(
 @app.get("/api/users/current")
 def read_current_user(claims=Depends(get_current_user)):
     if not claims:
-        raise HTTPException(status_code=401, detail="Not authenticated")
+        return {"username": None}
     return {"username": claims["sub"], "role": claims["role"]}
 
 
@@ -472,7 +483,7 @@ def list_capstones(
     search: str = Query(default=None),
     claims=Depends(require_role(["Admin", "Staff"]))
 ):
-    query = db.query(Capstone)
+    query = db.query(Capstone).order_by(Capstone.year.desc())
 
     if search:
         keyword = f"%{search}%"
