@@ -1,3 +1,6 @@
+const urlParams = new URLSearchParams(window.location.search);
+const searchParameter = urlParams.get("search");
+
 document.getElementById("searchForm").addEventListener("submit", async (e) => {
 	e.preventDefault();
 	loadSearch();    
@@ -17,6 +20,8 @@ function truncateText(text, maxWords=30) {
 
 async function loadSearch(page=1) {
 	const searchQuery = document.getElementById("searchInput").value;
+	document.title = `Search results for "${searchQuery}"`;
+	history.pushState(null, null, `/?search=${encodeURIComponent(searchQuery)}`);
 	if (searchQuery === "") return;
 	const resultsDiv = document.getElementById("results");
 	resultsDiv.innerHTML = "Fetching...";
@@ -55,4 +60,9 @@ async function loadSearch(page=1) {
 		<button class="page-link" onclick="loadSearch(${i})">${i}</button>
 		</li>`;
 	}
+}
+
+if (searchParameter) {
+	document.getElementById("searchInput").value = searchParameter;
+	loadSearch();
 }

@@ -17,13 +17,14 @@ async function loadCapstoneById(id) {
     if (!res.ok) {
         content.innerHTML = `
             <div class="alert alert-warning" role="alert">
-                <h3>An error occured</h3>
+                <h3>Ooops! An error occured</h3>
                 <p>Capstone can't be found at this moment.</p>
             </div>
         `;
         return;
     }
-    
+
+    document.title = `${data.title} - CIT Capstone Project Repository`;
     content.innerHTML = `
         <h1 class="mt-5">${data.title}</h1>
         <p class="mt-5">Author(s): ${data.authors}</p>
