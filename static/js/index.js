@@ -20,9 +20,9 @@ function truncateText(text, maxWords=30) {
 
 async function loadSearch(page=1) {
 	const searchQuery = document.getElementById("searchInput").value;
+	if (searchQuery === "") return;
 	document.title = `Search results for "${searchQuery}"`;
 	history.pushState(null, null, `/?search=${encodeURIComponent(searchQuery)}`);
-	if (searchQuery === "") return;
 	const resultsDiv = document.getElementById("results");
 	resultsDiv.innerHTML = "Fetching...";
 	const pagination = document.getElementById("pagination");
