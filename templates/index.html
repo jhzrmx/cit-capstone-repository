@@ -13,7 +13,7 @@
 </head>
 <body>
   <!-- Header Navbar -->
-  <nav class="navbar navbar-expand-lg navbar-dark shadow" style="background:#80B">
+  <nav class="fixed-top navbar navbar-expand-lg navbar-dark shadow" style="background:#80B">
     <div class="container-fluid">
       <a class="navbar-brand fw-bold" href="/"><h3 class="mb-0">CIT Capstone Repository</h3></a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -31,11 +31,13 @@
   </nav>
 
   <!-- Page Content-->
-  <div class="container mt-4">
-    <form id="searchForm" class="d-flex mb-3">
-      <input class="form-control me-2" type="search" placeholder="Search capstone..." id="searchInput">
-      <button class="btn btn-primary"><img src="/static/icons/magnify.svg"></button>
-    </form>
+  <div class="container">
+    <div class="pt-5 mt-4">
+      <form id="searchForm" class="d-flex mt-2 mb-3">
+        <input class="form-control me-2" type="search" placeholder="Search capstone..." id="searchInput">
+        <button class="btn btn-primary"><img src="/static/icons/magnify.svg"></button>
+      </form>
+    </div>
     <div id="results">
       <div class="alert alert-info" role="alert">
         <h4>Search Tips:</h4>
