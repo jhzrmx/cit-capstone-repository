@@ -46,7 +46,7 @@
       <table class="table table-bordered table-striped">
         <thead class="table-dark">
           <tr>
-            <th>Username</th>
+            <th>Email</th>
             <th>Role</th>
             <th>Actions</th>
           </tr>
@@ -68,7 +68,7 @@
           </div>
           <div class="modal-body">
             <form id="addUserForm">
-              <input class="form-control mb-2" name="username" placeholder="Username" required>
+              <input class="form-control mb-2" name="email" type="email" placeholder="Institutional Email (e.g., name@cit.edu)" required>
               <input class="form-control mb-2" name="password" type="password" placeholder="Password" required>
               <select class="form-control mb-2" name="role" required>
                 <option value="admin" disabled hidden selected>-Select a role-</option>
@@ -94,8 +94,8 @@
             <form id="editUserForm">
               <input type="hidden" id="editUserId">
               <div class="mb-3">
-                <label class="form-label">Username</label>
-                <input class="form-control mb-2" id="editUsername" name="username" required>
+                <label class="form-label">Email</label>
+                <input class="form-control mb-2" id="editEmail" name="email" type="email" required>
               </div>
               <div class="mb-3">
                 <label class="form-label">Role</label>
