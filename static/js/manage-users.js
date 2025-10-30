@@ -92,7 +92,7 @@ async function loadUsers(page=1,currentSearch="") {
     data.results.forEach(u => {
         const row = document.createElement("tr");
         row.innerHTML = `
-            <td>${u.username}</td>
+            <td>${u.email}</td>
             <td>${u.role}</td>
             <td>
             <button class="btn btn-warning btn-sm mb-1" onclick="openEditUser(${u.id})" title="Edit User">
@@ -127,7 +127,7 @@ async function openEditUser(id) {
     const res = await fetch(`/api/users/${id}`);
     const u = await res.json();
     document.getElementById("editUserId").value = u.id;
-    document.getElementById("editUsername").value = u.username;
+    document.getElementById("editEmail").value = u.email;
     document.getElementById("editRole").value = u.role;
     new bootstrap.Modal(document.getElementById("editUserModal")).show();
 }
