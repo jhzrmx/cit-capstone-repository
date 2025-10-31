@@ -15,7 +15,7 @@ async function updateNavbar() {
         const items = [];
         items.push({ id:"nav-smart-search", text: "Smart Search", href: "/" });
         
-        if (data.username !== null) {
+        if (data.email !== null) {
             if (data.role === "Admin" || data.role === "Staff") {
                 items.unshift({ id:"nav-manage-capstones", text: "Manage Capstones", href: "/manage-capstones" });
             }
