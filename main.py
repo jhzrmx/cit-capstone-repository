@@ -42,7 +42,7 @@ class Capstone(Base):
 class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
-    username = Column(String, unique=True, index=True, nullable=False)
+    email = Column(String, unique=True, index=True, nullable=False)
     password = Column(String, nullable=False)
     role = Column(String, default="Staff")
 
@@ -94,18 +94,18 @@ class CapstoneResponse(BaseModel):
     pdf_file: Optional[str]
 
 class UserCreate(BaseModel):
-    username: str
+    email: str
     password: str
     role: str = "Staff"
 
 class UserUpdate(BaseModel):
-    username: Optional[str]
+    email: Optional[str]
     password: Optional[str]
     role: Optional[str]
 
 class UserResponse(BaseModel):
     id: int
-    username: str
+    email: str
     role: str
     
     class Config:
@@ -173,8 +173,8 @@ def verify_password(plain_password, hashed_password):
 def get_password_hash(password):
     return pwd_context.hash(password)
 
-def get_user_by_username(db: Session, username: str):
-    return db.query(User).filter(User.username == username).first()
+def get_user_by_email(db: Session, email: str):
+    return db.query(User).filter(User.email == email).first()
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
@@ -208,8 +208,8 @@ def require_role_frontend(required_roles: List[str]):
         return claims
     return role_checker
 
-def authenticate_user(db: Session, username: str, password: str):
-    user = get_user_by_username(db, username)
+def authenticate_user(db: Session, email: str, password: str):
+    user = get_user_by_email(db, email)
     if not user:
         return None
     if not verify_password(password, user.password):
@@ -276,11 +276,11 @@ def login(
 ):
     user = authenticate_user(db, form_data.username, form_data.password)
     if not user:
-        raise HTTPException(status_code=401, detail="Invalid username or password")
+        raise HTTPException(status_code=401, detail="Invalid email or password")
 
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": user.username, "role": user.role},
+        data={"sub": user.email, "role": user.role},
         expires_delta=access_token_expires
     )
 
@@ -305,17 +305,17 @@ def logout(response: Response):
 
 @app.post("/api/users", response_model=UserResponse)
 def create_user(
-    username: str = Form(...),
+    email: str = Form(...),
     password: str = Form(...),
     role: str = Form("Staff"),
     db: Session = Depends(get_db),
     claims = Depends(require_role(["Admin"]))
 ):
-    if db.query(User).filter(User.username == username).first():
-        raise HTTPException(status_code=400, detail="Username already exists")
+    if db.query(User).filter(User.email == email).first():
+        raise HTTPException(status_code=400, detail="Email already exists")
 
     hashed_pw = get_password_hash(password)
-    db_user = User(username=username, password=hashed_pw, role=role)
+    db_user = User(email=email, password=hashed_pw, role=role)
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
@@ -333,18 +333,18 @@ def list_users(
     query = db.query(User)
     if search:
         keyword = f"%{search}%"
-        query = query.filter(User.username.ilike(keyword) | User.role.ilike(keyword))
+        query = query.filter(User.email.ilike(keyword) | User.role.ilike(keyword))
     total = query.count()
     users = query.offset((page - 1) * per_page).limit(per_page).all()
-    results = [{"id": u.id, "username": u.username, "role": u.role} for u in users]
+    results = [{"id": u.id, "email": u.email, "role": u.role} for u in users]
     return {"total": total, "page": page, "per_page": per_page, "results": results}
 
 
 @app.get("/api/users/current")
 def read_current_user(claims=Depends(get_current_user)):
     if not claims:
-        return {"username": None}
-    return {"username": claims["sub"], "role": claims["role"]}
+        return {"email": None}
+    return {"email": claims["sub"], "role": claims["role"]}
 
 
 @app.get("/api/users/{user_id}", response_model=UserResponse)
@@ -358,7 +358,7 @@ def get_user(user_id: int, db: Session = Depends(get_db), claims = Depends(requi
 @app.put("/api/users/{user_id}", response_model=UserResponse)
 def update_user(
     user_id: int,
-    username: Optional[str] = Form(None),
+    email: Optional[str] = Form(None),
     password: Optional[str] = Form(None),
     role: Optional[str] = Form(None),
     db: Session = Depends(get_db),
@@ -368,10 +368,10 @@ def update_user(
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    if username:
-        if username != db_user.username and db.query(User).filter(User.username == username).first():
-            raise HTTPException(status_code=400, detail="Username already exists")
-        db_user.username = username
+    if email:
+        if email != db_user.email and db.query(User).filter(User.email == email).first():
+            raise HTTPException(status_code=400, detail="Email already exists")
+        db_user.email = email
 
     if password:
         db_user.password = get_password_hash(password)
@@ -391,7 +391,7 @@ def delete_user(user_id: int, db: Session = Depends(get_db), claims = Depends(re
         raise HTTPException(status_code=404, detail="User not found")
     db.delete(db_user)
     db.commit()
-    return {"message": f"User {db_user.username} deleted successfully"}
+    return {"message": f"User {db_user.email} deleted successfully"}
 
 
 @app.post("/api/capstones", response_model=CapstoneResponse)
@@ -620,17 +620,17 @@ def seed_default_users():
         def get_password_hash(password: str):
             return pwd_context.hash(password)
 
-        if not db.query(User).filter(User.username == "admin").first():
+        if not db.query(User).filter(User.email == "admin@cit.edu").first():
             admin_user = User(
-                username="admin",
+                email="admin@cit.edu",
                 password=get_password_hash("admin123"),
                 role="Admin",
             )
             db.add(admin_user)
 
-        if not db.query(User).filter(User.username == "staff").first():
+        if not db.query(User).filter(User.email == "staff@cit.edu").first():
             staff_user = User(
-                username="staff",
+                email="staff@cit.edu",
                 password=get_password_hash("staff123"),
                 role="Staff",
             )

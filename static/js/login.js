@@ -20,7 +20,7 @@ form.addEventListener("submit", async (e) => {
 			}),
 		});
 		if (!res.ok) {
-			throw new Error("Invalid username or password");
+			throw new Error("Invalid email or password");
 		}
 		const data = await res.json();
 		btn.textContent = "✅ Login successful!";
