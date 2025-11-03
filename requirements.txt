@@ -9,3 +9,5 @@ numpy
 python-multipart
 python-jose[cryptography]
 passlib[bcrypt]
+openai
+cachetools
