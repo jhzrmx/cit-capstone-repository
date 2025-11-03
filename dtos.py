@@ -15,10 +15,9 @@ class CapstoneResponse(BaseModel):
     id: int
     title: str
     abstract: Optional[str]
-    authors: str
+    authors: List[str]
+    keywords: List[str]
     year: int
-    external_link: Optional[str]
-    pdf_file: Optional[str]
 
 class UserCreate(BaseModel):
     email: str
@@ -51,7 +50,14 @@ class ProjectOut(BaseModel):
     course: Optional[str] = None
     host: Optional[str] = None
     doc_type: Optional[str] = None
+    external_links: Optional[str] = None
     keywords: List[str] = []
+    
+class PaginatedProjectOutput(BaseModel):
+    total: int
+    page: int
+    per_page: int
+    results: List[ProjectOut] = []
     
 class SummarizeIn(BaseModel):
     query: str

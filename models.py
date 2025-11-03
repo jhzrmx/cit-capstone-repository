@@ -17,22 +17,6 @@ class User(Base):
     password = Column(String, nullable=False)
     role = Column(String, default="Staff")
 
-class Capstone(Base):
-    __tablename__ = "capstones"
-    id = Column(Integer, primary_key=True, index=True)
-    title = Column(String, unique=True, index=True)
-    abstract = Column(Text, nullable=True)
-    authors = Column(String)
-    year = Column(Integer)
-    external_link = Column(String, nullable=True)
-    pdf_file = Column(String, nullable=True)
-    embedding = Column(Text, nullable=True)
-    
-    def set_embedding(self, text: str):
-        embedding = encode_text(text).tolist()
-        self.embedding = json.dumps(embedding)
-
-
 class Project(Base):
     __tablename__ = "projects"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -40,6 +24,7 @@ class Project(Base):
     filename: Mapped[str] = mapped_column(String)
     title: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     year: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    external_links: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     abstract: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now(timezone.utc))
 

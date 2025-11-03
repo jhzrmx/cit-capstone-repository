@@ -37,4 +37,5 @@ class OllamaConfig:
     URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
     MODEL = os.getenv("OLLAMA_MODEL", "llama3.2")
 
-    
+class OpenAiConfig:
+    OPENAI_KEY   = os.getenv("OPENAI_API_KEY")

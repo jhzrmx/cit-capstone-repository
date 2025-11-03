@@ -34,4 +34,4 @@ def register_api_upload_docx_route(app: FastAPI):
             )
             created.append(pid)
         db.commit()
-        return {"status": "ok", "count": len(created), "projects_created": created}
+        return {"status": "ok", "inserted": created, "skipped": []}

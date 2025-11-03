@@ -7,12 +7,12 @@ from helpers.embeddings import embed_texts, unpack_vector
 def cosine_sim(a: np.ndarray, b: np.ndarray) -> float:
     return float(np.dot(a, b))
 
-def hybrid_retrieve(db: Session, query: str, k: int = 12) -> List[Dict]:
+def hybrid_retrieve(db: Session, query: str, k: int = 12, limit: int = 10) -> List[Dict]:
     # FTS5 (project-level)
     fts_rows = db.execute(
         text("""SELECT project_id, bm25(projects_fts) AS score
                 FROM projects_fts WHERE projects_fts MATCH :q
-                ORDER BY score LIMIT 10"""), {"q": query}
+                ORDER BY score LIMIT :limit"""), {"q": query, "limit": limit}
     ).fetchall()
     fts_ids = {row[0] for row in fts_rows}
 

@@ -10,11 +10,11 @@ def register_api_get_capstone_route(app: FastAPI):
     @app.get("/api/capstones/{project_id}")
     def get_project(project_id: int, db: Session = Depends(get_db)):
         p = db.execute(
-            text("SELECT id, title, year, abstract, filename, sha256, course, host, doc_type FROM projects WHERE id=:pid"),
+            text("SELECT id, title, year, abstract, filename, sha256, course, host, doc_type, external_links FROM projects WHERE id=:pid"),
             {"pid": project_id}
         ).fetchone()
         if not p: raise HTTPException(404, "Not found")
-        pid, title, year, abstract, filename, sha, course, host, doc_type = p
+        pid, title, year, abstract, filename, sha, course, host, doc_type, external_links = p
         authors = [r[0] for r in db.execute(text("SELECT full_name FROM authors WHERE project_id=:pid"), {"pid": pid}).fetchall()]
         sections = db.execute(
             text("SELECT heading, content, order_no FROM sections WHERE project_id=:pid ORDER BY order_no"),
@@ -22,7 +22,7 @@ def register_api_get_capstone_route(app: FastAPI):
         ).fetchall()
         keywords = [r[0] for r in db.execute(text("SELECT keyword FROM project_keywords WHERE project_id=:pid"), {"pid": pid}).fetchall()]
         return {
-            "id": pid, "title": title, "year": year, "abstract": abstract,
+            "id": pid, "title": title, "year": year, "abstract": abstract, "external_links": external_links,
             "authors": authors, "sections": [{"heading": h, "content": c, "order": o} for (h,c,o) in sections],
             "course": course, "host": host, "doc_type": doc_type, "keywords": keywords,
             "docx": f"/files/{sha}.docx", "filename": filename

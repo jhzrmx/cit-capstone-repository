@@ -1,8 +1,8 @@
-"""AI summary
+"""intial db
 
-Revision ID: 1fcda25414bd
+Revision ID: 13df810a474a
 Revises: 
-Create Date: 2025-11-03 20:16:12.739867
+Create Date: 2025-11-03 23:51:20.301707
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '1fcda25414bd'
+revision: str = '13df810a474a'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -40,6 +40,7 @@ def upgrade() -> None:
     sa.Column('filename', sa.String(), nullable=False),
     sa.Column('title', sa.String(), nullable=True),
     sa.Column('year', sa.Integer(), nullable=True),
+    sa.Column('external_links', sa.Text(), nullable=True),
     sa.Column('abstract', sa.Text(), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.Column('course', sa.String(), nullable=True),
