@@ -14,11 +14,17 @@ This also utilize smart searching with Sentence Transformer using model `all-Min
    ```
    pip install -r requirements.txt
    ```
-4. Run seed data
+4. Configure environment variables:
+   - Set your `OPENAI_API_KEY`
+   - Configure RAG settings (optional):
+     - `RAG_ENABLE_SUMMARY=true` to enable AI summaries
+     - `RAG_TOP_K=5` for number of results to include in summaries
+     - `RAG_CACHE_TTL=3600` for cache duration in seconds
+5. Run seed data
    ```
    python seed.py
    ```
-5. Run the FastAPI Uvicorn server:
+6. Run the FastAPI Uvicorn server:
    ```
    uvicorn main:app --reload
    ```
