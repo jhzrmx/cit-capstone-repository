@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel
 
 # ------------------------------
@@ -41,3 +41,21 @@ class UserResponse(BaseModel):
 
 class SearchQuery(BaseModel):
     text: str
+
+class ReferenceItem(BaseModel):
+    index: int              
+    capstone_id: int
+    title: str
+    authors: str
+    year: int
+
+class AISummary(BaseModel):
+    summary_text: str
+    references: List[ReferenceItem]
+
+class AbstractWithMetadata(BaseModel):
+    capstone_id: int
+    title: str
+    authors: str
+    year: int
+    abstract: str
