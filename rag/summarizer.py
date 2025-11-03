@@ -9,7 +9,7 @@ def summarize_with_ollama(query: str, passages: List[dict]) -> str:
 
 QUERY: {query}
 
-Use ONLY these snippets. Cite with [1], [2], etc. End with a bullet list "Sources used" with titles and years.
+Use ONLY these snippets. Cite with [1], [2], etc. End with a bullet list "Sources used" with titles and years. Return HTML format.
 
 Sources:
 {chr(10).join(blocks)}"""
