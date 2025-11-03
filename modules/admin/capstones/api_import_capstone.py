@@ -4,7 +4,7 @@ from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
 
 from db import get_db
 from helpers.session import require_role
-from models.capstone import Capstone
+from models import Capstone
 from sqlalchemy.orm import Session
 
 

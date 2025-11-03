@@ -3,7 +3,7 @@ from fastapi import Depends, FastAPI, HTTPException
 from db import get_db
 from helpers.pdf import PdfHelper
 from helpers.session import require_role
-from models.capstone import Capstone
+from models import Capstone
 from sqlalchemy.orm import Session
 
 

@@ -5,7 +5,7 @@ from db import get_db
 from helpers.session import require_role
 from sqlalchemy.orm import Session
 
-from models.user import User
+from models import User
 
 def register_api_get_users_route(app: FastAPI):
     @app.get("/api/users")

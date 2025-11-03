@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 from pydantic import BaseModel
 
 # ------------------------------
@@ -41,3 +41,18 @@ class UserResponse(BaseModel):
 
 class SearchQuery(BaseModel):
     text: str
+
+class ProjectOut(BaseModel):
+    id: int
+    title: Optional[str]
+    year: Optional[int]
+    abstract: Optional[str]
+    authors: List[str]
+    course: Optional[str] = None
+    host: Optional[str] = None
+    doc_type: Optional[str] = None
+    keywords: List[str] = []
+    
+class SummarizeIn(BaseModel):
+    query: str
+    k: int = 12

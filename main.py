@@ -8,6 +8,9 @@ from modules.auth import configure_auth_module
 from modules.capstones import configure_capstone_module
 from modules.home import configure_home_module
 
+PathConfig.UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+PathConfig.TEMPLATES_DIR.mkdir(parents=True, exist_ok=True)
+
 # ------------------------------
 # FastAPI app setup
 # ------------------------------

@@ -7,7 +7,7 @@ from helpers.session import require_role
 from dtos import UserResponse
 from sqlalchemy.orm import Session
 
-from models.user import User
+from models import User
 
 def register_create_user_route(app: FastAPI):
     @app.post("/api/users", response_model=UserResponse)

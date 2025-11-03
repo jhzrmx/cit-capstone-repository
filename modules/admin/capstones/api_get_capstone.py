@@ -1,7 +1,7 @@
 from fastapi import Depends, FastAPI, HTTPException
 from db import get_db
 from dtos import CapstoneResponse
-from models.capstone import Capstone
+from models import Capstone
 from sqlalchemy.orm import Session
 
 

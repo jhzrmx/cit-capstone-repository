@@ -9,3 +9,8 @@ numpy
 python-multipart
 python-jose[cryptography]
 passlib[bcrypt]
+spacy
+python-multipart
+python-docx
+PyMuPDF
+requests

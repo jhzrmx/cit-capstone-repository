@@ -5,7 +5,7 @@ from db import get_db
 from helpers.pdf import PdfHelper
 from helpers.session import require_role
 from dtos import CapstoneResponse
-from models.capstone import Capstone
+from models import Capstone
 from sqlalchemy.orm import Session
 
 

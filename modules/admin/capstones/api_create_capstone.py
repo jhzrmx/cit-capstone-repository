@@ -9,7 +9,7 @@ from helpers.session import require_role
 from dtos import CapstoneResponse
 from sqlalchemy.orm import Session
 
-from models.capstone import Capstone
+from models import Capstone
 
 
 def register_api_create_capstone_route(app: FastAPI):

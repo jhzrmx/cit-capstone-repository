@@ -4,7 +4,7 @@ from sqlalchemy import String
 
 from db import get_db
 from helpers.session import require_role
-from models.capstone import Capstone
+from models import Capstone
 from sqlalchemy.orm import Session
 
 
