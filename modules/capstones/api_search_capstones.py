@@ -66,14 +66,15 @@ def register_api_search_capstones_route(app: FastAPI):
 
         results.sort(key=lambda x: x["similarity"], reverse=True)
 
-        # Generate AI summary for top K results
-        top_k = int(RAGConfig.RAG_TOP_K)
-        top_results = results[:top_k]
-        
-        capstone_ids = [r["id"] for r in top_results]
-        cache_key = get_cache_key(capstone_ids, text)
-        
-        if RAGConfig.RAG_ENABLE_SUMMARY == "true" and top_results:
+        query_id = None
+        if RAGConfig.RAG_ENABLE_SUMMARY == "true" and results:
+            top_k = int(RAGConfig.RAG_TOP_K)
+            top_results_for_summary = results[:top_k]
+            
+            capstone_ids = [r["id"] for r in top_results_for_summary]
+            cache_key = get_cache_key(capstone_ids, text)
+            query_id = cache_key
+            
             abstracts = [
                 AbstractWithMetadata(
                     capstone_id=r["id"],
@@ -82,7 +83,7 @@ def register_api_search_capstones_route(app: FastAPI):
                     year=r["year"],
                     abstract=r["abstract"] or ""
                 )
-                for r in top_results
+                for r in top_results_for_summary
                 if r["abstract"]
             ]
             
@@ -105,6 +106,6 @@ def register_api_search_capstones_route(app: FastAPI):
             "total": total,
             "page": page,
             "per_page": per_page,
-            "query_id": cache_key
+            "query_id": query_id
         }
 
