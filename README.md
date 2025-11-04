@@ -14,17 +14,28 @@ This also utilize smart searching with Sentence Transformer using model `all-Min
    ```
    pip install -r requirements.txt
    ```
-4. Configure environment variables:
-   - Set your `OPENAI_API_KEY`
-   - Configure RAG settings (optional):
-     - `RAG_ENABLE_SUMMARY=true` to enable AI summaries
-     - `RAG_TOP_K=5` for number of results to include in summaries
-     - `RAG_CACHE_TTL=3600` for cache duration in seconds
-5. Run seed data
+4. **Download Local LLM Model**:
+   ```bash
+   python download_model.py granite   # 241 MB
+   # OR
+   python download_model.py qwen      # 424 MB
+   ```
+   
+5. Configure environment variables in `config_local.py`:
+   ```python
+   OPENAI_API_KEY = "your-api-key-here"
+   LLM_PROVIDER = "local" # or "openai"
+   LOCAL_MODEL_NAME = "qwen"
+   RAG_ENABLE_SUMMARY = "true"
+   RAG_TOP_K = 5
+   RAG_CACHE_TTL = 3600
+   ```
+   
+6. Run seed data:
    ```
    python seed.py
    ```
-6. Run the FastAPI Uvicorn server:
+7. Run the FastAPI Uvicorn server:
    ```
    uvicorn main:app --reload
    ```
