@@ -11,3 +11,5 @@ python-jose[cryptography]
 passlib[bcrypt]
 openai
 cachetools
+llama-cpp-python
+requests
