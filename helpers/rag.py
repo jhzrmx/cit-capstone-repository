@@ -4,13 +4,89 @@ import re
 from typing import List, Optional
 from cachetools import TTLCache
 
-from config import RAGConfig
+from config import RAGConfig, PathConfig
 from dtos import ReferenceItem, AISummary, AbstractWithMetadata
 
 rag_cache = TTLCache(
     maxsize=int(RAGConfig.RAG_CACHE_TTL),
     ttl=int(RAGConfig.RAG_CACHE_TTL)
 )
+
+_local_llm = None
+_active_queries = set()
+
+def get_local_llm():
+    global _local_llm
+    if _local_llm is None:
+        from llama_cpp import Llama
+        
+        model_name = RAGConfig.LOCAL_MODEL_NAME.lower()
+        if model_name == "granite":
+            model_path = str(PathConfig.BASE_DIR / "models" / "local_llm" / "granite-4.0-h-350m-Q5_K_M.gguf")
+        elif model_name == "qwen":
+            model_path = str(PathConfig.BASE_DIR / "models" / "local_llm" / "Qwen3-0.6B-Q5_K_M.gguf")
+        else:
+            model_path = str(RAGConfig.LOCAL_MODEL_PATH)
+        
+        _local_llm = Llama(
+            model_path=model_path,
+            n_ctx=RAGConfig.LOCAL_MODEL_N_CTX,
+            n_threads=RAGConfig.LOCAL_MODEL_N_THREADS,
+            verbose=False
+        )
+    return _local_llm
+
+
+async def call_local_llm(prompt: str) -> str:
+    try:
+        llm = get_local_llm()
+        
+        llm.reset()
+        
+        model_name = RAGConfig.LOCAL_MODEL_NAME.lower()
+        
+        if model_name == "granite":
+            full_prompt = f"""Question: {prompt}
+
+Answer:"""
+            stop_tokens = ["Question:", "\n\n\n"]
+        
+        elif model_name == "qwen":
+            full_prompt = f"""<|im_start|>system
+You are a helpful research assistant.<|im_end|>
+<|im_start|>user
+{prompt} /no_think<|im_end|>
+<|im_start|>assistant
+"""
+            stop_tokens = ["<|im_end|>"]
+        
+        else:
+            full_prompt = f"""Question: {prompt}
+
+Answer:"""
+            stop_tokens = ["Question:", "\n\n\n"]
+        
+        estimated_tokens = len(full_prompt) / 4
+        max_context = RAGConfig.LOCAL_MODEL_N_CTX
+        
+        if estimated_tokens > max_context - 500:
+            raise Exception(f"Prompt too long: ~{int(estimated_tokens)} tokens (max: {max_context - 500})")
+        
+        response = await asyncio.to_thread(
+            llm,
+            full_prompt,
+            max_tokens=500,
+            temperature=0.7,
+            stop=stop_tokens,
+            echo=False
+        )
+        
+        summary_text = response["choices"][0]["text"].strip()
+        return summary_text
+        
+    except Exception as e:
+        raise Exception(f"Failed to generate summary with local model: {str(e)}")
+
 
 async def call_openai_llm(prompt: str) -> str:
     from openai import AsyncOpenAI
@@ -38,6 +114,15 @@ async def call_openai_llm(prompt: str) -> str:
         raise Exception(f"Failed to generate summary with OpenAI: {str(e)}")
 
 
+async def call_llm(prompt: str) -> str:
+    if RAGConfig.LLM_PROVIDER == "local":
+        return await call_local_llm(prompt)
+    elif RAGConfig.LLM_PROVIDER == "openai":
+        return await call_openai_llm(prompt)
+    else:
+        raise ValueError(f"Unknown LLM provider: {RAGConfig.LLM_PROVIDER}")
+
+
 def get_cache_key(capstone_ids: List[int], query_text: str) -> str:
     sorted_ids = sorted(capstone_ids)
     key_string = f"{sorted_ids}:{query_text.lower().strip()}"
@@ -51,11 +136,17 @@ def build_rag_prompt(
     query_text: str
 ) -> str:
     references_text = ""
+    max_abstract_chars = 400
+    
     for idx, abstract in enumerate(abstracts, start=1):
+        abstract_text = abstract.abstract
+        if len(abstract_text) > max_abstract_chars:
+            abstract_text = abstract_text[:max_abstract_chars] + "..."
+        
         references_text += f"[{idx}] {abstract.title}\n"
         references_text += f"    Authors: {abstract.authors}\n"
         references_text += f"    Year: {abstract.year}\n"
-        references_text += f"    Abstract: {abstract.abstract}\n\n"
+        references_text += f"    Abstract: {abstract_text}\n\n"
     
     prompt = f"""Based on the following research capstone abstracts, provide a comprehensive summary that answers the user's query: "{query_text}"
 
@@ -115,7 +206,7 @@ async def generate_rag_summary(
     query_text: str
 ) -> AISummary:
     prompt = build_rag_prompt(abstracts, query_text)
-    response_text = await call_openai_llm(prompt)
+    response_text = await call_llm(prompt)
     summary = parse_llm_response(response_text, abstracts)
     return summary
 
@@ -125,14 +216,29 @@ async def generate_and_cache_summary(
     query_text: str,
     cache_key: str
 ) -> None:
+    global _active_queries
+    
+    if cache_key in _active_queries:
+        return
+    
+    _active_queries.add(cache_key)
+    
     try:
         summary = await generate_rag_summary(abstracts, query_text)
         rag_cache[cache_key] = summary
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         pass
+    finally:
+        _active_queries.discard(cache_key)
 
 
 def get_cached_summary(cache_key: str) -> Optional[AISummary]:
     summary = rag_cache.get(cache_key)
     return summary
+
+
+def is_query_in_progress(cache_key: str) -> bool:
+    return cache_key in _active_queries
 
