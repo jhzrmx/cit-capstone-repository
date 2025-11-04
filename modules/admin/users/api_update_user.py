@@ -6,7 +6,7 @@ from db import get_db
 from helpers.password import hash_password
 from helpers.session import require_role
 from dtos import UserResponse
-from models.user import User
+from models import User
 
 
 def register_api_update_user_route(app: FastAPI):

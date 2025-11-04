@@ -14,11 +14,27 @@ This also utilize smart searching with Sentence Transformer using model `all-Min
    ```
    pip install -r requirements.txt
    ```
-4. Run seed data
+4. Configure spacy
+   ```
+   python -m spacy download en_core_web_sm
+   ```
+5. Install ollama
+
+   ```
+   curl -fsSL https://ollama.com/install.sh | sh
+
+   ollama pull llama3.2
+   ```
+
+6. Migrate database
+   ```
+   alembic upgrade head
+   ```
+7. Run seed data
    ```
    python seed.py
    ```
-5. Run the FastAPI Uvicorn server:
+8. Run the FastAPI Uvicorn server:
    ```
    uvicorn main:app --reload
    ```

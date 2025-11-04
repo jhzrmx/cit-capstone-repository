@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+load_dotenv()
+
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -7,6 +10,15 @@ from modules.admin.users import configure_admin_users_module
 from modules.auth import configure_auth_module
 from modules.capstones import configure_capstone_module
 from modules.home import configure_home_module
+
+PathConfig.UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+PathConfig.TEMPLATES_DIR.mkdir(parents=True, exist_ok=True)
+
+
+import os
+print("############################")
+print(os.getenv('OPENAI_API_KEY'))
+print("############################")
 
 # ------------------------------
 # FastAPI app setup

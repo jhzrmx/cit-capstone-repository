@@ -1,11 +1,12 @@
 from http.client import HTTPException
 from fastapi import FastAPI, File, Form, UploadFile
 from fastapi.params import Depends
+from sqlalchemy import text
 from db import get_db
 from helpers.pdf import PdfHelper
 from helpers.session import require_role
 from dtos import CapstoneResponse
-from models.capstone import Capstone
+from models import Author, Project, ProjectKeyword
 from sqlalchemy.orm import Session
 
 
@@ -17,30 +18,44 @@ def register_api_update_capstone_route(app: FastAPI):
         title: str = Form(...),
         abstract: str = Form(None),
         authors: str = Form(...),
+        keywords: str = Form(...),
         year: int = Form(...),
-        external_link: str | None = Form(None),
-        pdf: UploadFile = File(None),
+        external_links: str = Form(None),
         db: Session = Depends(get_db),
         claims=Depends(require_role(["Admin", "Staff"]))
     ):
-        capstone = db.query(Capstone).filter(Capstone.id == capstone_id).first()
+        capstone = db.query(Project).filter(Project.id == capstone_id).first()
         if not capstone:
             raise HTTPException(status_code=404, detail="Capstone not found")
 
         capstone.title = title
         capstone.abstract = abstract
-        capstone.authors = authors
         capstone.year = year
-        capstone.external_link = external_link
-
-        if pdf and pdf.filename.strip():
-            if capstone.pdf_file:
-                PdfHelper.delete_pdf(capstone.pdf_file)
-            capstone.pdf_file = PdfHelper.save_pdf(pdf, title)
+        capstone.external_links = external_links
         
-        text_for_embedding = f"{title} {abstract or ''}"
-        capstone.set_embedding(text_for_embedding)
+        db.query(Author).filter_by(project_id=capstone.id).delete()
+        for author in authors.split(','):
+            author = author.strip()
+            db.add(Author(project_id=capstone.id, full_name=author))
+                
+        db.query(ProjectKeyword).filter_by(project_id=capstone.id).delete()
+        for keyword in keywords.split(','):
+            keyword = keyword.strip()
+            db.add(ProjectKeyword(project_id=capstone.id, keyword=keyword))
+        
         db.commit()
         db.refresh(capstone)
-        return capstone
+        
+        authors = [r[0] for r in db.execute(text("SELECT full_name FROM authors WHERE project_id=:pid"), {"pid": capstone.id}).fetchall()]
+        keywords = [r[0] for r in db.execute(text("SELECT keyword FROM project_keywords WHERE project_id=:pid"), {"pid": capstone.id}).fetchall()]
+        
+        return {
+            "id": capstone.id, 
+            "title": title, 
+            "year": year, 
+            "abstract": abstract,
+            "external_links": external_links,
+            "authors": authors,
+            "keywords": keywords
+        }
 
