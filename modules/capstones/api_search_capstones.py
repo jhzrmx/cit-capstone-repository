@@ -4,7 +4,7 @@ import numpy as np
 
 from db import get_db
 from helpers.embedding import encode_text, load_embedding
-from helpers.rag import get_cache_key, generate_and_cache_summary
+from helpers.rag import get_cache_key, generate_and_cache_summary, get_cached_summary, is_query_in_progress
 from dtos import SearchQuery, AbstractWithMetadata
 from models.capstone import Capstone
 from sqlalchemy.orm import Session
@@ -67,7 +67,7 @@ def register_api_search_capstones_route(app: FastAPI):
         results.sort(key=lambda x: x["similarity"], reverse=True)
 
         query_id = None
-        if RAGConfig.RAG_ENABLE_SUMMARY == "true" and results:
+        if RAGConfig.RAG_ENABLE_SUMMARY == "true" and results and page == 1:
             top_k = int(RAGConfig.RAG_TOP_K)
             top_results_for_summary = results[:top_k]
             
@@ -75,25 +75,29 @@ def register_api_search_capstones_route(app: FastAPI):
             cache_key = get_cache_key(capstone_ids, text)
             query_id = cache_key
             
-            abstracts = [
-                AbstractWithMetadata(
-                    capstone_id=r["id"],
-                    title=r["title"],
-                    authors=r["authors"],
-                    year=r["year"],
-                    abstract=r["abstract"] or ""
-                )
-                for r in top_results_for_summary
-                if r["abstract"]
-            ]
+            existing_summary = get_cached_summary(cache_key)
+            in_progress = is_query_in_progress(cache_key)
             
-            if abstracts:
-                background_tasks.add_task(
-                    generate_and_cache_summary,
-                    abstracts,
-                    text,
-                    cache_key
-                )
+            if not existing_summary and not in_progress:
+                abstracts = [
+                    AbstractWithMetadata(
+                        capstone_id=r["id"],
+                        title=r["title"],
+                        authors=r["authors"],
+                        year=r["year"],
+                        abstract=r["abstract"] or ""
+                    )
+                    for r in top_results_for_summary
+                    if r["abstract"]
+                ]
+                
+                if abstracts:
+                    background_tasks.add_task(
+                        generate_and_cache_summary,
+                        abstracts,
+                        text,
+                        cache_key
+                    )
 
         # Paginate results
         total = len(results)
