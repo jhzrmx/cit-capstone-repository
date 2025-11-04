@@ -7,6 +7,20 @@ const searchState = {
 	lastQuery: null
 };
 
+window.addEventListener('beforeunload', () => {
+	console.log('[AI Summary] Cleanup: User navigating away');
+	stopPolling();
+});
+
+let lastPathname = window.location.pathname;
+setInterval(() => {
+	if (window.location.pathname !== lastPathname) {
+		console.log('[AI Summary] Cleanup: Detected page navigation');
+		stopPolling();
+		lastPathname = window.location.pathname;
+	}
+}, 500);
+
 document.getElementById("searchForm").addEventListener("submit", async (e) => {
 	e.preventDefault();
 	loadSearch();    
@@ -15,6 +29,19 @@ document.getElementById("searchForm").addEventListener("submit", async (e) => {
 setTimeout(()=>{
     document.getElementById("nav-smart-search").classList.add("active");
 }, 250);
+
+document.addEventListener('DOMContentLoaded', () => {
+	const navLinks = document.querySelectorAll('a[href]:not([href^="#"])');
+	navLinks.forEach(link => {
+		link.addEventListener('click', (e) => {
+			const href = link.getAttribute('href');
+			if (href && !href.startsWith('?') && !href.includes('search=')) {
+				console.log('[AI Summary] Cleanup: User clicked navigation link');
+				stopPolling();
+			}
+		});
+	});
+});
 
 function truncateText(text, maxWords=30) {
 	const words = text.split(" ");
@@ -119,15 +146,19 @@ async function pollSummary(queryId) {
 			const summary = await res.json();
 			
 			if (summary) {
+				console.log(`[AI Summary] ✓ Summary received for query ID: ${queryId}`);
 				showSummaryContent(summary);
 				stopPolling();
+			} else {
+				console.log(`[AI Summary] Still generating... (query ID: ${queryId})`);
 			}
 		} else {
+			console.error(`[AI Summary] HTTP error: ${res.status}`);
 			showSummaryError();
 			stopPolling();
 		}
 	} catch (error) {
-		console.error("Polling error:", error);
+		console.error("[AI Summary] Polling error:", error);
 		showSummaryError();
 		stopPolling();
 	}
@@ -136,16 +167,18 @@ async function pollSummary(queryId) {
 function startPolling(queryId) {
 	stopPolling();
 	searchState.queryId = queryId;
+	console.log(`[AI Summary] Starting to poll for query ID: ${queryId}`);
 	
 	pollSummary(queryId);
 	searchState.pollingInterval = setInterval(() => pollSummary(queryId), 2000);
 	
 	setTimeout(() => {
 		if (searchState.queryId === queryId) {
+			console.log(`[AI Summary] Timeout reached (60s) for query ID: ${queryId}`);
 			stopPolling();
 			showSummaryError();
 		}
-	}, 30000);
+	}, 60000);
 }
 
 async function loadSearch(page=1) {
@@ -154,13 +187,13 @@ async function loadSearch(page=1) {
 	document.title = `Search results for "${searchQuery}"`;
 	history.pushState(null, null, `/?search=${encodeURIComponent(searchQuery)}`);
 	const resultsDiv = document.getElementById("results");
-	resultsDiv.innerHTML = "Fetching...";
 	const pagination = document.getElementById("pagination");
-	pagination.innerHTML = "";
 	
 	const isNewSearch = (searchQuery !== searchState.lastQuery);
 	
 	if (isNewSearch) {
+		resultsDiv.innerHTML = "Fetching...";
+		pagination.innerHTML = "";
 		hideSummary();
 		searchState.lastQuery = searchQuery;
 		searchState.queryId = null;
