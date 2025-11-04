@@ -208,3 +208,6 @@ __marimo__/
 
 # Local configuration with sensitive data
 config_local.py
+
+# Local LLM models
+/models/local_llm/
