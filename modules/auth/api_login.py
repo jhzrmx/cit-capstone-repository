@@ -27,14 +27,17 @@ def register_api_login_route(app: FastAPI):
             expires_delta=access_token_expires
         )
 
-        response = JSONResponse(content={"message": "Login successful"})
-        response.set_cookie(
-            key="access_token",
-            value=access_token,
-            httponly=True,
-            secure=False,  # set True in production with HTTPS
-            samesite="Lax",
-            max_age=AuthConfig.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-        )
+        response = JSONResponse(content={
+            "message": "Login successful",
+            "status": "ok",
+            "data": {
+                "access_token": access_token,
+                "access_token_expires": access_token_expires.total_seconds(),
+                "user": {
+                    "email": user.email,
+                    "role": user.role
+                }
+            }
+        })
         return response
 
