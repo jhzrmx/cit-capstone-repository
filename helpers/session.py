@@ -21,6 +21,18 @@ def get_current_user(request: Request):
     except JWTError:
         return None
 
+def get_current_user_jwt(request: Request):
+    authorization = request.headers.get("Authorization")
+    print(f"####### AUTHORIZATION: {authorization} ########")
+    token = str(authorization).replace('Bearer ', '')
+    if not token:
+        return None
+    try:
+        payload = jwt.decode(token, AuthConfig.SECRET_KEY, algorithms=[AuthConfig.ALGORITHM])
+        return payload
+    except JWTError:
+        return None
+
 
 def authenticate_user(db: Session, email: str, password: str):
     user = UserRepository.get_user_by_email(db, email)
@@ -50,7 +62,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 
 
 def require_role(required_roles: List[str]):
-    def role_checker(claims=Depends(get_current_user)):
+    def role_checker(claims=Depends(get_current_user_jwt)):
         if not claims:
             raise HTTPException(status_code=401, detail="Not authenticated")
         if claims.get("role") not in required_roles:
